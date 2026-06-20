@@ -119,4 +119,3 @@ web: gunicorn app:app
 
 ---
 
-If you want, I can also generate a `requirements.txt`, `Dockerfile`, or update `app.py` to load the model from a configurable path — tell me which you'd like next.
