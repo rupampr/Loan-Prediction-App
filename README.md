@@ -1,117 +1,80 @@
-# Loan Prediction Model — Deployment Guide
+# Loan Prediction Model Summary
 
-## Overview
+## Notebook Summary
 
-This repository contains a Jupyter notebook that trains a loan default prediction model and a small web app to serve predictions. Use this guide to run the notebook locally, export the trained model, and deploy the application.
+This notebook focuses on building and evaluating machine learning models to predict loan approval status from the `loan_approval_dataset.csv` dataset.
 
-## Key files
+### Key steps
 
-- `LoanPredictionModel.ipynb` — model training and evaluation notebook
+1. **Data Loading and Initial Exploration**
+   - Loaded the dataset into a Pandas DataFrame.
+   - Inspected shape, preview rows, null values, data types, and summary statistics.
+2. **Data Cleaning and Feature Engineering**
+   - Dropped `loan_id` as it is not predictive.
+   - Created `Total_asset` by summing `bank_asset_value`, `residential_assets_value`, `luxury_assets_value`, and `commercial_assets_value`.
+   - Removed the original asset columns after deriving `Total_asset`.
+   - Cleaned whitespace from column names and string values.
+   - Encoded categorical features such as `education`, `self_employed`, and `loan_status`.
+3. **Data Splitting and Preprocessing**
+   - Split data into training and test sets with 20% test size.
+   - Applied `StandardScaler` to `income_annum` and `loan_amount`.
+   - Applied `PowerTransformer` to `Total_asset` to reduce skew.
+   - Combined preprocessing with a `ColumnTransformer`.
+4. **Model Training and Evaluation**
+   - Trained Logistic Regression on scaled features.
+   - Trained Random Forest and Decision Tree classifiers on original features.
+   - Evaluated using accuracy, confusion matrices, classification reports, and cross-validation.
+
+## Results
+
+### Logistic Regression
+
+- Test accuracy: approximately **90.6%**
+- Confusion matrix:
+
+```
+[[276  42]
+ [ 38 498]]
+```
+
+- Classification metrics were generally between 0.87 and 0.93.
+
+### Random Forest Classifier
+
+- Test accuracy: approximately **97.7%**
+- 5-fold cross-validation mean: approximately **97.8%**
+- Confusion matrix:
+
+```
+[[305  13]
+ [  7 529]]
+```
+
+- Feature importances:
+  - `cibil_score`: 0.839
+  - `loan_term`: 0.061
+  - `loan_amount`: 0.034
+
+### Decision Tree Classifier
+
+- Test accuracy: approximately **97.5%**
+- 5-fold cross-validation mean: approximately **97.9%**
+
+## Final Model
+
+The Random Forest model was selected as the final production model due to its high accuracy and stable cross-validation performance.
+
+- Saved model file: `loan_model.pkl`
+
+## Notes
+
+- The notebook shows that `cibil_score` is the strongest predictor.
+- `Total_asset` is a derived feature used to summarize multiple asset columns.
+- The preprocessing pipeline must match inference preprocessing for correct predictions.
+
+## Files
+
+- `LoanPredictionModel.ipynb` — notebook with the full modeling workflow
 - `loan_approval_dataset.csv` — dataset used for training
-- `app.py` — Flask app to serve predictions
-
-## Prerequisites
-
-- Python 3.8 or newer
-- pip
-- (Optional) Docker for containerized deployment
-
-## Setup
-
-1. Create and activate a virtual environment:
-
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# macOS / Linux
-source venv/bin/activate
-```
-
-2. Install required packages (common ones used by the notebook):
-
-```bash
-pip install pandas scikit-learn matplotlib seaborn jupyterlab flask joblib
-```
-
-Create a `requirements.txt` if you need reproducible installs:
-
-```bash
-pip freeze > requirements.txt
-```
-
-## Run the Notebook
-
-1. Start JupyterLab or Jupyter Notebook:
-
-```bash
-jupyter lab
-```
-
-2. Open `LoanPredictionModel.ipynb` and run cells in order. The notebook includes sections for data exploration, preprocessing, model training, evaluation, and saving the trained model (commonly saved using `joblib` or `pickle`).
-
-## Export / Save the Model
-
-If the notebook saves the trained model to a file (e.g., `model.joblib`), ensure the web app expects the same filename and path. Typical pattern in notebook:
-
-```python
-import joblib
-joblib.dump(trained_model, 'model.joblib')
-```
-
-## Run the Web App Locally
-
-1. Ensure the exported model file is present in the repository root (or update the path in `app.py`).
-
-2. Run the Flask app:
-
-```bash
-python app.py
-```
-
-3. By default the app will bind to `localhost:5000`. Use the provided endpoints to send test requests (see `app.py` for exact routes and expected payloads).
-
-## Docker Deployment (Optional)
-
-Create a `Dockerfile` like this minimal example:
-
-```dockerfile
-FROM python:3.10-slim
-WORKDIR /app
-COPY . /app
-RUN pip install --no-cache-dir -r requirements.txt
-EXPOSE 5000
-CMD ["python", "app.py"]
-```
-
-Build and run:
-
-```bash
-docker build -t loan-predict-app .
-docker run -p 5000:5000 loan-predict-app
-```
-
-## Platform Notes (Heroku / Cloud Providers)
-
-- Ensure the web server binds to the port provided by the environment variable (e.g., `PORT`).
-- For production use Gunicorn or another WSGI server instead of Flask's built-in server.
-
-Example `Procfile` for Heroku:
-
-```
-web: gunicorn app:app
-```
-
-## Environment & Configuration
-
-- If `app.py` reads configuration or secrets (API keys, model path), provide them via environment variables or a config file outside the repo.
-- Confirm model input feature ordering matches the preprocessing used during training.
-
-## Troubleshooting
-
-- If predictions are wrong, confirm the same preprocessing (scaling, encoding) is applied at inference time.
-- If model file not found, ensure the path in `app.py` matches the saved location.
-
-
----
-
+- `loan_model.pkl` — saved Random Forest model
+- `app.py` — Streamlit app for making predictions using `loan_model.pkl`
