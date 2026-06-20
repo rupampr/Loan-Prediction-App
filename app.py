@@ -1,9 +1,28 @@
 import streamlit as st
 import pandas as pd
 import pickle
+import joblib
+import traceback
+
+
+def load_model(path: str):
+    """Try to load a model using joblib, then pickle. Return None on failure and
+    render an error message in the app with a traceback for debugging.
+    """
+    try:
+        return joblib.load(path)
+    except Exception:
+        try:
+            with open(path, "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            st.error("Failed to load model. Check that 'loan_model.pkl' exists and the environment matches the model's dependencies.")
+            st.text(traceback.format_exc())
+            return None
+
 
 # Load model
-model = pickle.load(open("loan_model.pkl", "rb"))
+model = load_model("loan_model.pkl")
 
 # Title
 st.title("🏦 Loan Approval Predictor")
@@ -74,12 +93,21 @@ if st.button("Predict Loan Approval"):
         'loan_amount': [loan_amount],
         'loan_term': [loan_term],
         'cibil_score': [cibil_score],
-        'Total_asset': [total_asset]
+        'total_asset': [total_asset]
     })
+
+    if model is None:
+        st.error("Model is not loaded — cannot make predictions.")
+        
 
     prediction = model.predict(input_df)
 
-    probability = model.predict_proba(input_df)
+    probability = None
+    try:
+        probability = model.predict_proba(input_df)
+    except Exception:
+        # Some models don't implement predict_proba
+        probability = None
 
     if prediction[0] == 1:
         st.success("✅ Loan Approved")
