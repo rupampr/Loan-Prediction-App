@@ -112,10 +112,6 @@ web: gunicorn app:app
 - If predictions are wrong, confirm the same preprocessing (scaling, encoding) is applied at inference time.
 - If model file not found, ensure the path in `app.py` matches the saved location.
 
-## Next Steps
-
-- Optionally create a lightweight `requirements.txt` and `Dockerfile` in this repo.
-- Add a CI step to run the notebook or tests before deploying.
 
 ---
 
